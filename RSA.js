@@ -23,4 +23,5 @@ sign.end();
 const signature = sign.sign(privateKey, 'base64');
 
 console.log('Public key:', publicKey);
+console.log('Private key:', privateKey)
 console.log('Signature:', signature);
