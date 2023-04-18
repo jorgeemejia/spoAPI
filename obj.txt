@@ -1,0 +1,36 @@
+
+Implement a secure purchase order system that allows the user to enter a purchase request and
+routes it to Order Processing Department (OPD) for signature. Each customer has an account
+with the online purchasing system. The online purchasing system has the public-key of every
+customer.
+
+First, the customer enters his/her ID and password. The system verifies his/her ID and pass-
+word. Next, the customer sends the order as well as a timestamp to the OPD - confidentiality
+and digital signature must be provided. OPD verifies the signature of the customer and checks
+if the product is available. If the customer’s signature is verified and the product is available,
+OPD prepares the order. After OPD processes the order, OPD retrieves the customers email
+address and sends an email to the customer, indicating that the order has been shipped. OPD
+should be implemented as a concurrent server.
+Your implementation must provide both confidentiality and digital signature. For digital sig-
+nature you must provide the user with a choice of using RSA or Digital Signature Algorithm
+(DSA;
+https://bit.ly/2TvvGSt).
+Both digital signature schemes must be supported
+
+
+Current Goal:
+do the step where the user sends dig sig
+    create hash around message
+    wrap hash around personal private
+    wrap msg around the other person's public
+    - looking at the user,
+    - send back the public key
+    - real talk, i think ima need the user to give their private key so they can make the sig
+    - another thing to look into, creating a token and sending it to the user so that
+    - the site can communicate securely
+
+when they click submit you wrap it it the public key and do the rest
+
+Side Quests(Optional):
+- Store the hashes and salts of the passwords in the database, not the actual passwords
+- Use a HTTPS connection rather than HTTPS
