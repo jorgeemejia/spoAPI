@@ -4,6 +4,7 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dbConnection import dbConnection
+import jwt
 
 cert_path = os.path.join(os.getcwd(), 'localhost.pem')
 key_path = os.path.join(os.getcwd(), 'localhost-key.pem')
@@ -23,7 +24,13 @@ def login():
     user = cursor.fetchone()
     if user:
         userPublic = user[2]
-        response = jsonify({'success': True, 'userPublic': userPublic})
+        #create the jwt token
+        payload = {'username': username, 'publicKey' : userPublic}
+        secret_key = 'secretkey123'
+        algorithm = 'HS256'
+        jwt_token = jwt.encode(payload, secret_key, algorithm=algorithm)
+
+        response = jsonify({'success': True, 'userPublic': userPublic, 'jwt' : jwt_token})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response
     else:
