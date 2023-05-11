@@ -19,17 +19,7 @@ Both digital signature schemes must be supported
 
 
 Current Goal:
-do the step where the user sends dig sig
-    create hash around message
-    wrap hash around personal private
-    wrap msg around the other person's public
-    - looking at the user,
-    - send back the public key
-    - real talk, i think ima need the user to give their private key so they can make the sig
-    - another thing to look into, creating a token and sending it to the user so that
-    - the site can communicate securely
-
-when they click submit you wrap it it the public key and do the rest
+-check if order bytes match
 
 Side Quests(Optional):
 - Store the hashes and salts of the passwords in the database, not the actual passwords
