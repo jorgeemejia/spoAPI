@@ -21,6 +21,8 @@ from Cryptodome.Hash import SHA256
 from Cryptodome.PublicKey import RSA
 from cryptography.exceptions import InvalidSignature
 from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
 
 #Grab the path to the SSL Certificate file
 cert_path = os.path.join(os.getcwd(), 'localhost.pem')
@@ -130,6 +132,26 @@ def order():
     if grabbed_order:
         response = jsonify({'success': True, "order_status:" : "completed"})
         response.headers.add('Access-Control-Allow-Origin', '*')
+        #####################################################################
+        #TODO CHATGPT, ADD SOME CODE HERE THAT WILL SEND AN EMAIL
+        sender_email = 'jorgemejia62100@gmail.com'
+        receiver_email = 'jorgemejia62100@gmail.com'
+        subject = 'Order Confirmation'
+        message = 'Your order has been completed.'
+
+        # Create a MIMEText object with the email content
+        email_content = MIMEText(message)
+        email_content['Subject'] = subject
+        email_content['From'] = sender_email
+        email_content['To'] = receiver_email
+
+        # Send the email using SMTP
+        smtp_server = smtplib.SMTP('smtp.gmail.com', 587)
+        smtp_server.starttls()
+        smtp_server.login('jorgemejia62100@gmail.com', 'aahpcesvluxdhayf')
+        smtp_server.sendmail(sender_email, receiver_email, email_content.as_string())
+        smtp_server.quit()
+        #####################################################################
         return response
     else:
         response = jsonify({'success': False, "order_status:" : "unable to complete"})
