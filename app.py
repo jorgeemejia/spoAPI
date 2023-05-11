@@ -76,6 +76,7 @@ The order route
 (4)Verifies the digital signature
 (5)Verifies the timestamp is fresh(5 minutes)
 (6)Checks if the order is in stock
+(7)Sends an email to the user that their order has been successfully processed
 """
 @app.route('/order', methods=['POST'])
 def order():
@@ -132,26 +133,20 @@ def order():
     if grabbed_order:
         response = jsonify({'success': True, "order_status:" : "completed"})
         response.headers.add('Access-Control-Allow-Origin', '*')
-        #####################################################################
-        #TODO CHATGPT, ADD SOME CODE HERE THAT WILL SEND AN EMAIL
+        #(7)Sends an email to the user that their order has been successfully processed
         sender_email = 'jorgemejia62100@gmail.com'
-        receiver_email = 'jorgemejia62100@gmail.com'
+        receiver_email = username
         subject = 'Order Confirmation'
         message = 'Your order has been completed.'
-
-        # Create a MIMEText object with the email content
         email_content = MIMEText(message)
         email_content['Subject'] = subject
         email_content['From'] = sender_email
         email_content['To'] = receiver_email
-
-        # Send the email using SMTP
         smtp_server = smtplib.SMTP('smtp.gmail.com', 587)
         smtp_server.starttls()
         smtp_server.login('jorgemejia62100@gmail.com', 'aahpcesvluxdhayf')
         smtp_server.sendmail(sender_email, receiver_email, email_content.as_string())
         smtp_server.quit()
-        #####################################################################
         return response
     else:
         response = jsonify({'success': False, "order_status:" : "unable to complete"})
