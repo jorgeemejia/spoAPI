@@ -11,6 +11,7 @@ import base64
 import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import dsa
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.hashes import SHA256 
 from cryptography.hazmat.primitives import hashes
@@ -23,6 +24,10 @@ from cryptography.exceptions import InvalidSignature
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from Cryptodome.PublicKey import DSA
+from Cryptodome.Signature import DSS
+from Cryptodome.Hash import SHA256
 
 #Grab the path to the SSL Certificate file
 cert_path = os.path.join(os.getcwd(), 'localhost.pem')
@@ -85,6 +90,7 @@ def order():
     order = data['order']
     timestamp = data['timestamp']
     signature = data['signature']
+    algorithm = data['algorithm']
     #(2)Grabs the jwt from the authorization headers and extracts the username within
     #the jwt
     token = request.headers.get('Authorization')
@@ -100,25 +106,48 @@ def order():
     username = payload['username']
     #(3)Gets a public key from the db that corresponds to the username
     cursor = db.cursor()
-    cursor.execute("SELECT userPublic FROM users WHERE userName=%s", (username,))
-    publicKey = cursor.fetchone()
-    publicKey = publicKey[0]
+    if algorithm == 'RSA':
+        cursor.execute("SELECT userPublicRSA FROM users WHERE userName=%s", (username,))
+        publicKey = cursor.fetchone()
+        publicKey = publicKey[0]
+    else:
+        cursor.execute("SELECT userPublicDSA FROM users WHERE userName=%s", (username,))
+        publicKey = cursor.fetchone()
+        publicKey = publicKey[0]
     #(4)Verifies the digital signature
-    order_bytes = order.encode('utf-8')
-    decoded_signature = base64.b64decode(signature)
-    public_key = serialization.load_pem_public_key(publicKey.encode(), backend=default_backend())
-    try:
-        public_key.verify(
-            decoded_signature,
-            order_bytes,
-            padding.PKCS1v15(),
-            hashes.SHA256()
-        )
-        verified = True
-    except InvalidSignature:
-        verified = False
-    if not verified:
-        return jsonify({'message': 'Invalid signature'}), 401
+    if algorithm == 'RSA':
+        order_bytes = order.encode('utf-8')
+        decoded_signature = base64.b64decode(signature)
+        public_key = serialization.load_pem_public_key(publicKey.encode(), backend=default_backend())
+        try:
+            public_key.verify(
+                decoded_signature,
+                order_bytes,
+                padding.PKCS1v15(),
+                hashes.SHA256()
+            )
+            verified = True
+        except InvalidSignature:
+            verified = False
+        if not verified:
+            return jsonify({'message': 'Invalid signature'}), 401
+    else:
+        #TODO CHAT GPT, add code here to verify a digital signature that uses DSA,
+        #try to make the code look as similar as possible to the code above for RSA verification
+        order_bytes = order.encode('utf-8')
+        decoded_signature = base64.b64decode(signature)
+        public_key = load_pem_public_key(publicKey.encode(), backend=default_backend())
+        h = hashes.Hash(hashes.SHA256())
+        h.update(order_bytes)
+        digest = h.finalize()
+        
+        try:
+            public_key.verify(decoded_signature, digest, signature_algorithm=dsa.DSASignatureAlgorithm.SHA256)
+            verified = True
+        except InvalidSignature:
+            verified = False
+        if not verified:
+            return jsonify({'message': 'Invalid signature'}), 401
     #(5)Verifies the timestamp is fresh(5 minutes)
     submitted_timestamp = timestamp[:-1]
     current_timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
