@@ -28,6 +28,8 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from Cryptodome.PublicKey import DSA
 from Cryptodome.Signature import DSS
 from Cryptodome.Hash import SHA256
+import bcrypt
+
 
 #Grab the path to the SSL Certificate file
 cert_path = os.path.join(os.getcwd(), 'localhost.pem')
@@ -56,17 +58,27 @@ def login():
     password = data['password']
     #(2)Checks if the user actually is an existing member
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM users WHERE userName=%s AND userPassword=%s", (username, password))
+    # cursor.execute("SELECT * FROM users WHERE userName=%s AND userPassword=%s", (username, password))
+    cursor.execute("SELECT * FROM accounts WHERE username=%s", (username,))
     user = cursor.fetchone()
-    #(3)Sends a jwt if everything checks out
+    #(3)Verify the password using bcrypt and the stored hash and salt
     if user:
-        payload = {'username': username}
-        secret_key = 'secretkey123'
-        algorithm = 'HS256'
-        jwt_token = jwt.encode(payload, secret_key, algorithm=algorithm)
-        response = jsonify({'success': True, 'jwt' : jwt_token})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response
+        stored_hash = user[2]
+        stored_salt = user[1]
+        print("salt", stored_salt)
+        print("hash", stored_hash)
+        salted_password = stored_salt + password
+        password_bytes = password.encode('utf-8')
+        if bcrypt.checkpw(password_bytes, stored_hash.encode('utf-8')):
+            payload = {'username': username}
+            secret_key = 'secretkey123'
+            algorithm = 'HS256'
+            jwt_token = jwt.encode(payload, secret_key, algorithm=algorithm)
+            response = jsonify({'success': True, 'jwt' : jwt_token})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response
+        else:
+            return jsonify({'message': 'Incorrect password!'}), 401
     else:
         response = jsonify({'success': False})
         response.headers.add('Access-Control-Allow-Origin', '*')
@@ -107,7 +119,8 @@ def order():
     #(3)Gets a public key from the db that corresponds to the username
     cursor = db.cursor()
     if algorithm == 'RSA':
-        cursor.execute("SELECT userPublicRSA FROM users WHERE userName=%s", (username,))
+        # cursor.execute("SELECT userPublicRSA FROM users WHERE userName=%s", (username,))
+        cursor.execute("SELECT rsaPublic FROM accounts WHERE userName=%s", (username,))
         publicKey = cursor.fetchone()
         publicKey = publicKey[0]
     else:
